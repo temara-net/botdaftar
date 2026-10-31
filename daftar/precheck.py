@@ -47,11 +47,12 @@ def _skor_form(form) -> int:
     return skor
 
 
-def pracek(url: str, session: requests.Session | None = None) -> dict:
+def pracek(url: str, session: requests.Session | None = None,
+           timeout: int = 25) -> dict:
     """Kembalikan dict: kategori, alasan, url_form, method, kolom[], action."""
     s = session or requests.Session()
     try:
-        r = s.get(url, headers=_UA, timeout=25)
+        r = s.get(url, headers=_UA, timeout=timeout)
         r.raise_for_status()
     except Exception as e:
         return {"kategori": "C", "alasan": f"Situs tidak bisa dibuka: {e}"}
@@ -103,3 +104,137 @@ def pracek(url: str, session: requests.Session | None = None) -> dict:
     else:
         hasil.update({"kategori": "A", "alasan": "Formulir biasa tanpa CAPTCHA."})
     return hasil
+
+
+# ---------- Penemuan halaman daftar dari NAMA DOMAIN saja ----------
+# Aturan pemilik (1 Nov 2026): pengguna cukup mengetik nama domain; bot yang
+# mencarikan link halaman daftarnya di domain itu.
+_JALUR_UMUM = ["/register", "/signup", "/sign-up", "/daftar", "/registrasi",
+               "/join", "/create-account", "/auth/register", "/user/register",
+               "/account/register", "/pendaftaran", "/members/register"]
+_KATA_LINK = ["daftar", "register", "signup", "sign-up", "sign up", "registrasi",
+              "join", "gabung", "buat akun", "create account", "buka akun",
+              "registration"]
+
+
+def _normalisasi_domain(teks: str):
+    """'contoh.com' / 'https://contoh.com/path' -> (skema|None, host[:port])."""
+    t = teks.strip().lower()
+    skema = None
+    if t.startswith("http://"):
+        skema, t = "http", t[7:]
+    elif t.startswith("https://"):
+        skema, t = "https", t[8:]
+    host = t.split("/")[0].split("?")[0].split("#")[0]
+    if not host or " " in host or (".." in host):
+        return None
+    if not re.match(r"^[a-z0-9.-]+(:\d{1,5})?$", host):
+        return None
+    if "." not in host and not host.startswith("localhost"):
+        return None
+    return skema, host
+
+
+def _peringkat_ai(urls: list[str], domain: str) -> list[str] | None:
+    """Bila kunci AI terisi, AI memilih urutan kandidat halaman daftar.
+    Pilihan AI divalidasi terhadap daftar yang ada; gagal -> None (heuristik)."""
+    import os
+    key = os.environ.get("AI_API_KEY", "")
+    model = os.environ.get("AI_MODEL", "")
+    base = os.environ.get("AI_BASE_URL", "https://openrouter.ai/api/v1")
+    if not (key and model) or len(urls) < 2:
+        return None
+    try:
+        daftar_teks = "\n".join(f"{i}. {u}" for i, u in enumerate(urls))
+        r = requests.post(base.rstrip("/") + "/chat/completions",
+                          headers={"Authorization": f"Bearer {key}"},
+                          json={"model": model, "messages": [
+                              {"role": "user", "content":
+                               f"Di domain {domain}, dari daftar URL berikut, mana yang "
+                               f"paling mungkin halaman PENDAFTARAN akun baru? Balas HANYA "
+                               f"nomornya.\n{daftar_teks}"}]},
+                          timeout=30)
+        r.raise_for_status()
+        teks = r.json()["choices"][0]["message"]["content"].strip()
+        idx = int(re.search(r"\d+", teks).group())
+        if 0 <= idx < len(urls):
+            pilihan = urls[idx]
+            return [pilihan] + [u for u in urls if u != pilihan]
+    except Exception as e:
+        print(f"[precheck] peringkat AI gagal, pakai penelusuran biasa: {e}")
+    return None
+
+
+def temukan(teks: str, session: requests.Session | None = None) -> dict:
+    """Cari halaman daftar dari nama domain (atau URL beranda).
+
+    Strategi: buka beranda -> kumpulkan tautan yang berbau daftar ->
+    (AI memilih bila tersedia) -> tambahkan jalur umum -> pracek satu per
+    satu sampai ketemu formulir. Hasil dict sama seperti pracek(), plus
+    'sumber_pilih': 'ai' | 'penelusuran'.
+    """
+    norm = _normalisasi_domain(teks)
+    if not norm:
+        return {"kategori": "C",
+                "alasan": "Itu belum berbentuk nama domain. Contoh format: contoh.com"}
+    skema, host = norm
+    s = session or requests.Session()
+    skemas = [skema] if skema else ["https", "http"]
+    beranda_url, beranda_html = None, ""
+    for sk in skemas:
+        try:
+            r = s.get(f"{sk}://{host}/", headers=_UA, timeout=15)
+            if r.status_code < 500:
+                beranda_url, beranda_html = r.url, r.text
+                break
+        except Exception:
+            continue
+    if not beranda_url:
+        return {"kategori": "C",
+                "alasan": f"Domain {host} tidak bisa dibuka dari sini (koneksi gagal "
+                          "di https maupun http). Periksa lagi ejaan domainnya."}
+    basis = beranda_url.split("?")[0]
+    if not basis.endswith("/"):
+        basis = basis.rsplit("/", 1)[0] + "/"
+
+    kandidat: list[str] = []
+    soup = BeautifulSoup(beranda_html, "html.parser")
+    for a in soup.find_all("a", href=True):
+        href = a["href"].strip()
+        teks_link = a.get_text(" ", strip=True).lower()
+        gab = (href + " " + teks_link).lower()
+        if any(k in gab for k in _KATA_LINK):
+            u = urljoin(beranda_url, href)
+            nu = _normalisasi_domain(u)
+            if nu:
+                host_k = nu[1].split(":")[0]
+                akar = ".".join(host.split(":")[0].split(".")[-2:])
+                if (host_k == host.split(":")[0] or host_k.endswith("." + akar)) \
+                        and u not in kandidat:
+                    kandidat.append(u)
+    sumber = "penelusuran"
+    urutan_ai = _peringkat_ai(list(kandidat), host)
+    if urutan_ai:
+        kandidat, sumber = urutan_ai, "ai"
+    for jalur in _JALUR_UMUM:
+        u = urljoin(basis, jalur.lstrip("/"))
+        if u not in kandidat:
+            kandidat.append(u)
+    kandidat = kandidat[:8]
+
+    terbaik_b = None
+    for u in kandidat:
+        info = pracek(u, session=s, timeout=12)
+        if info["kategori"] == "A":
+            info["sumber_pilih"] = sumber
+            return info
+        if info["kategori"] == "B" and terbaik_b is None:
+            terbaik_b = info
+    if terbaik_b:
+        terbaik_b["sumber_pilih"] = sumber
+        return terbaik_b
+    return {"kategori": "C", "sumber_pilih": sumber,
+            "alasan": f"Sudah ditelusuri di {host} (beranda + {len(kandidat)} kandidat "
+                      "tautan/jalur umum), tapi tidak ditemukan halaman pendaftaran "
+                      "dengan formulir. Mungkin pendaftaran hanya lewat aplikasi, "
+                      "undangan, atau subdomain lain."}

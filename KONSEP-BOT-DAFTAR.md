@@ -36,8 +36,8 @@ Tidak ada bot yang bisa daftar ke SEMUA website secara buta — tiap situs beda 
 Bot TIDAK memecahkan CAPTCHA, TIDAK mengakali anti-bot, TIDAK membuat akun massal — satu proses = satu akun untuk satu pengguna. Ini batas desain, bukan kekurangan sementara.
 
 ## Alur percakapan di Telegram (mesin status per pengguna)
-1. `/daftar` — bot minta URL website tujuan.
-2. **Pracek situs:** bot membuka situs, mencari formulir daftar, memetakan kolomnya, mendeteksi CAPTCHA & jenis verifikasi → bot mengumumkan kategori (A/B/C) + kolom apa saja yang akan diisi. Kategori C berhenti di sini.
+1. `/daftar` — pengguna cukup mengetik **nama domain** website tujuan (perintah pemilik 1 Nov 2026; URL lengkap tetap diterima). Bot/AI mencarikan link halaman daftarnya di domain itu: menelusuri tautan berbau daftar di beranda + jalur umum (/register, /daftar, /signup, ...); bila kunci AI tersedia, AI yang memilih kandidat terbaiknya.
+2. **Pracek situs:** bot membuka halaman daftar yang ditemukan, memetakan kolomnya, mendeteksi CAPTCHA & jenis verifikasi → bot mengumumkan kategori (A/B/C) + kolom apa saja yang akan diisi. Kategori C berhenti di sini (termasuk bila halaman daftar tidak ditemukan sama sekali).
 3. Bot minta **email** dari pengguna (validasi format; email tidak disimpan sesudah proses selesai kecuali di laporan hasil milik pengguna itu sendiri).
 4. Bot **menghasilkan nama/username acak via AI** (nama tampilan + username turunan), ditampilkan ke pengguna → pengguna bisa `OK` atau `Ganti` (maks 3x ganti, sesudah itu ketik sendiri).
 5. Bot minta **password dari klien sendiri**, dengan peringatan sebelum mengetik: pakai password khusus untuk akun ini, jangan password email/password utama yang dipakai di tempat lain. Password hanya hidup di memori proses selama pendaftaran berjalan — tidak ditulis ke log, tidak disimpan sesudah proses selesai, dan TIDAK tampil di laporan hasil (klien sudah tahu passwordnya sendiri).

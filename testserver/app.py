@@ -49,7 +49,8 @@ class H(BaseHTTPRequestHandler):
             self._kirim(FORM.format(
                 extra="<p>Kami akan mengirim kode OTP SMS ke nomor Anda untuk verifikasi.</p>"))
         elif self.path == "/":
-            self._kirim("<html><body><h1>Beranda Situs Uji</h1></body></html>")
+            self._kirim('<html><body><h1>Beranda Situs Uji</h1>'
+                        '<a href="/daftar">Daftar Sekarang</a></body></html>')
         else:
             self._kirim("<html><body>404</body></html>", 404)
 

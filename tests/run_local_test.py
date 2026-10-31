@@ -166,7 +166,7 @@ try:
     rc = botmod.main()
     cek("main() selesai rc=0", rc == 0)
     semua = "\n".join(teks_terkirim())
-    cek("non-pemilik tidak dilayani", semua.count("Kirim URL") == 1, semua[:200])
+    cek("non-pemilik tidak dilayani", semua.count("Kirim NAMA DOMAIN") == 1, semua[:200])
     cek("alur mencapai minta email", "kategori A" in semua and "EMAIL" in semua)
     cek("nama acak ditawarkan + ganti bekerja", semua.count("Nama:") >= 2, semua[:300])
     cek("hasil akhir BERHASIL terkirim", "PENDAFTARAN BERHASIL" in semua, semua[-400:])

@@ -14,7 +14,7 @@ import sys
 
 from . import names
 from .executor import execute
-from .precheck import pracek
+from .precheck import pracek, temukan, _normalisasi_domain
 from .state import State
 from .telegram import Telegram
 
@@ -49,18 +49,31 @@ def handle(tg: Telegram, st: State, chat_id: int, text: str):
         return
     if t.lower() == "/daftar":
         c.update({"stage": "wait_url"})
-        tg.send_message(chat_id, "Kirim URL halaman pendaftaran website tujuannya "
-                                 "(contoh: https://contoh.com/register).")
+        tg.send_message(chat_id, "Kirim NAMA DOMAIN website tujuannya saja "
+                                 "(contoh: contoh.com) — bot yang mencarikan halaman "
+                                 "daftarnya. Kalau sudah tahu alamat pastinya, URL "
+                                 "lengkap halaman daftar juga boleh.")
         return
 
     if stage == "wait_url":
-        if not _URL.match(t):
-            tg.send_message(chat_id, "Itu belum berbentuk URL lengkap. Kirim URL "
-                                     "halaman pendaftarannya (diawali http:// atau https://), "
-                                     "atau /batal.")
+        norm = _normalisasi_domain(t)
+        if not norm:
+            tg.send_message(chat_id, "Itu belum berbentuk nama domain. Cukup ketik "
+                                     "domainnya saja, contoh: contoh.com — atau /batal.")
             return
-        tg.send_message(chat_id, "Memeriksa situsnya dulu...")
-        info = pracek(t)
+        # URL lengkap yang menunjuk langsung ke sebuah halaman -> pracek langsung.
+        # Nama domain / URL beranda -> bot menelusuri halaman daftarnya.
+        path = ""
+        if "://" in t:
+            sisa = t.split("://", 1)[1]
+            path = sisa.split("/", 1)[1] if "/" in sisa else ""
+        langsung = bool(_URL.match(t)) and bool(path.strip("/"))
+        if langsung:
+            tg.send_message(chat_id, "Memeriksa halaman itu dulu...")
+            info = pracek(t)
+        else:
+            tg.send_message(chat_id, "Mencari halaman daftar di domain itu...")
+            info = temukan(t)
         if info["kategori"] == "C":
             st.reset_conv(chat_id)
             tg.send_message(chat_id, f"Tidak bisa diproses.\n\n{info['alasan']}\n\n"
@@ -73,7 +86,11 @@ def handle(tg: Telegram, st: State, chat_id: int, text: str):
                                      "tahap berikutnya. Proses berhenti di sini.")
             return
         c.update({"stage": "wait_email", "info": info})
-        tg.send_message(chat_id, _ringkas_form(info) + "\n\nSitusnya kategori A dan bisa "
+        ketemu = ""
+        if info.get("sumber_pilih"):
+            ketemu = (f"Halaman daftarnya ketemu — dicari oleh "
+                      f"{'AI' if info['sumber_pilih'] == 'ai' else 'penelusuran bot'}.\n\n")
+        tg.send_message(chat_id, ketemu + _ringkas_form(info) + "\n\nSitusnya kategori A dan bisa "
                                                        "diproses. Sekarang kirim EMAIL "
                                                        "yang mau dipakai untuk akun ini "
                                                        "(email kamu sendiri — verifikasi "
