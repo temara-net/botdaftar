@@ -4,6 +4,13 @@ data/*.json
 # Artefak harness uji lokal
 test/mock_*
 
+# Lingkungan & cache Python lokal (di GitHub Actions dibuat ulang dari requirements)
+.venv-daftar/
+__pycache__/
+daftar/__pycache__/
+tests/__pycache__/
+testserver/__pycache__/
+
 # File konfigurasi lokal berisi token/key asli, bila dibuat terpisah
 config.local.php
 .env

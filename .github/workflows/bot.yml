@@ -1,0 +1,52 @@
+name: botdaftar
+
+# Model batch sesuai konsep: bot TIDAK siaga 24 jam. Tiap run mengambil
+# pesan Telegram terbaru dari pemilik, memprosesnya (termasuk menjalankan
+# pendaftaran bila alur sudah lengkap), menyimpan state, lalu selesai.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: botdaftar
+  cancel-in-progress: false
+
+jobs:
+  jalan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pasang dependensi
+        run: |
+          pip install -r daftar/requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Jalankan bot
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
+          STATE_PATH: state/state.json
+          EXECUTOR: browser
+        run: python -m daftar.bot
+
+      - name: Simpan state bila berubah
+        run: |
+          if [ -n "$(git status --porcelain state/)" ]; then
+            git config user.name "botdaftar[bot]"
+            git config user.email "botdaftar@users.noreply.github.com"
+            git add state/
+            git commit -m "state: perbarui sesi bot"
+            git push
+          fi
