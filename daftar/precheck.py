@@ -55,7 +55,22 @@ def pracek(url: str, session: requests.Session | None = None,
         r = s.get(url, headers=_UA, timeout=timeout)
         r.raise_for_status()
     except Exception as e:
-        return {"kategori": "C", "alasan": f"Situs tidak bisa dibuka: {e}"}
+        # Pesan untuk PENGGUNA harus bersih — jangan tampilkan teks error
+        # teknis mentah dari library (koreksi dari tangkapan layar pemilik
+        # 1 Nov 2026: balasan bot memuat tumpukan teks HTTPSConnectionPool).
+        detail = f"{type(e).__name__}: {e}"
+        if "Failed to resolve" in detail or "NameResolution" in detail:
+            alasan = ("Situs tidak bisa dibuka: alamat domainnya tidak "
+                      "ditemukan — periksa lagi ejaan domainnya.")
+        elif "timeout" in detail.lower() or "timed out" in detail.lower():
+            alasan = "Situs tidak bisa dibuka: koneksi ke situsnya kehabisan waktu (timeout)."
+        elif "403" in detail:
+            alasan = "Situs tidak bisa dibuka: akses ditolak oleh situsnya (HTTP 403)."
+        elif "404" in detail:
+            alasan = "Halaman itu tidak ditemukan di situsnya (HTTP 404)."
+        else:
+            alasan = "Situs tidak bisa dibuka dari sini (koneksi gagal)."
+        return {"kategori": "C", "alasan": alasan}
 
     html = r.text
     rendah = html.lower()

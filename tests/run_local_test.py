@@ -78,7 +78,8 @@ class TGH(BaseHTTPRequestHandler):
 
 def kirim_update(chat_id, teks, uid):
     TGH.antre.append({"update_id": uid, "message": {
-        "message_id": uid, "chat": {"id": chat_id, "type": "private"}, "text": teks}})
+        "message_id": uid, "chat": {"id": chat_id, "type": "private"}, "text": teks,
+        "from": {"id": chat_id, "first_name": "Pemilik"}}})
 
 
 def teks_terkirim():
@@ -163,10 +164,12 @@ try:
     kirim_update(OWNER, "GANTI", 5)
     kirim_update(OWNER, "OK", 6)
     kirim_update(OWNER, PW, 7)
+    kirim_update(OWNER, "/start", 8)
     rc = botmod.main()
     cek("main() selesai rc=0", rc == 0)
     semua = "\n".join(teks_terkirim())
     cek("non-pemilik tidak dilayani", semua.count("Kirim NAMA DOMAIN") == 1, semua[:200])
+    cek("sapaan memakai nama profil Telegram pengirim", "Halo, Pemilik." in semua, semua[-300:])
     cek("alur mencapai minta email", "kategori A" in semua and "EMAIL" in semua)
     cek("nama acak ditawarkan + ganti bekerja", semua.count("Nama:") >= 2, semua[:300])
     cek("hasil akhir BERHASIL terkirim", "PENDAFTARAN BERHASIL" in semua, semua[-400:])

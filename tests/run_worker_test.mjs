@@ -49,7 +49,7 @@ function buatIo() {
   return { io, kv, terkirim, dispatches };
 }
 
-const upd = (chatId, text, id) => ({ update_id: id, message: { chat: { id: chatId }, text } });
+const upd = (chatId, text, id) => ({ update_id: id, message: { chat: { id: chatId }, text, from: { first_name: "Penguji" } } });
 
 try {
   await tungguServer();
@@ -61,7 +61,9 @@ try {
     await handleUpdate(io, upd(999, "/start", 1));
     cek("non-pemilik diabaikan", terkirim.length === 0, JSON.stringify(terkirim));
     await handleUpdate(io, upd(OWNER, "/start", 2));
-    cek("pemilik disapa", terkirim.length === 1 && terkirim[0][1].includes("Bot daftar website siap"),
+    cek("pemilik disapa pakai nama profil Telegram-nya",
+        terkirim.length === 1 && terkirim[0][1].startsWith("Halo, Penguji.") &&
+        terkirim[0][1].includes("Bot daftar website siap"),
         JSON.stringify(terkirim));
   }
 

@@ -21,9 +21,13 @@ from .telegram import Telegram
 _URL = re.compile(r"^https?://\S+$", re.I)
 _EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-SAPA = ("Halo pemilik. Bot daftar website siap.\n\n"
-        "Kirim /daftar untuk mulai mendaftar ke sebuah website.\n"
-        "Kirim /batal kapan saja untuk membatalkan proses yang berjalan.")
+def _sapa(nama: str = "") -> str:
+    """Sapaan memakai nama profil Telegram pengirim (bukan nama yang
+    ditulis permanen di kode) — koreksi pemilik 1 Nov 2026."""
+    awal = f"Halo, {nama}. " if nama else "Halo. "
+    return (awal + "Bot daftar website siap.\n\n"
+            "Kirim /daftar untuk mulai mendaftar ke sebuah website.\n"
+            "Kirim /batal kapan saja untuk membatalkan proses yang berjalan.")
 
 
 def _ringkas_form(info: dict) -> str:
@@ -35,13 +39,13 @@ def _ringkas_form(info: dict) -> str:
     return "\n".join(baris)
 
 
-def handle(tg: Telegram, st: State, chat_id: int, text: str):
+def handle(tg: Telegram, st: State, chat_id: int, text: str, nama_pengirim: str = ""):
     c = st.conv(chat_id)
     stage = c.get("stage", "idle")
     t = text.strip()
 
     if t.lower() in ("/start", "/help"):
-        tg.send_message(chat_id, SAPA)
+        tg.send_message(chat_id, _sapa(nama_pengirim))
         return
     if t.lower() == "/batal":
         st.reset_conv(chat_id)
@@ -188,8 +192,10 @@ def main() -> int:
         if str(chat_id) != str(owner):
             print(f"[bot] pesan dari non-pemilik {chat_id} diabaikan")
             continue
+        pengirim = msg.get("from") or {}
+        nama_pengirim = pengirim.get("first_name") or pengirim.get("username") or ""
         try:
-            handle(tg, st, chat_id, text)
+            handle(tg, st, chat_id, text, nama_pengirim)
         except Exception as e:
             print(f"[bot] error memproses pesan: {e}")
             try:

@@ -19,9 +19,14 @@
 const GH_REPO = "temara-net/botdaftar";
 const GH_WORKFLOW = "execute.yml";
 
-const SAPA = "Halo pemilik. Bot daftar website siap.\n\n" +
-  "Kirim /daftar untuk mulai mendaftar ke sebuah website.\n" +
-  "Kirim /batal kapan saja untuk membatalkan proses yang berjalan.";
+// Sapaan memakai nama profil Telegram pengirim — bukan nama yang ditulis
+// permanen di kode (koreksi pemilik 1 Nov 2026).
+function sapa(nama) {
+  const awal = nama ? `Halo, ${nama}. ` : "Halo. ";
+  return awal + "Bot daftar website siap.\n\n" +
+    "Kirim /daftar untuk mulai mendaftar ke sebuah website.\n" +
+    "Kirim /batal kapan saja untuk membatalkan proses yang berjalan.";
+}
 
 const DEPAN = ["Andini", "Bagas", "Citra", "Dimas", "Eka", "Fajar", "Gita", "Hadi",
   "Intan", "Joko", "Kartika", "Lukman", "Maya", "Nanda", "Oscar",
@@ -160,7 +165,8 @@ async function pracekUrl(io, url) {
   try {
     r = await io.fetchText(url);
   } catch (e) {
-    return { kategori: "C", alasan: `Situs tidak bisa dibuka: ${e.message || e}` };
+    return { kategori: "C", alasan: "Situs tidak bisa dibuka dari sini (koneksi gagal). " +
+      "Periksa lagi ejaan domainnya." };
   }
   if (r.status >= 400) {
     return { kategori: "C", alasan: `Situs tidak bisa dibuka: HTTP ${r.status}` };
@@ -239,6 +245,7 @@ export async function handleUpdate(io, update) {
   const msg = update.message || {};
   const chatId = msg.chat && msg.chat.id;
   const text = (msg.text || "").trim();
+  const namaPengirim = (msg.from && (msg.from.first_name || msg.from.username)) || "";
   if (chatId == null) return;
   if (String(chatId) !== String(io.ownerId)) return; // khusus pemilik
 
@@ -251,7 +258,7 @@ export async function handleUpdate(io, update) {
   const t = text;
   const rendah = t.toLowerCase();
 
-  if (rendah === "/start" || rendah === "/help") { await io.send(chatId, SAPA); return; }
+  if (rendah === "/start" || rendah === "/help") { await io.send(chatId, sapa(namaPengirim)); return; }
   if (rendah === "/batal") {
     await reset();
     await io.send(chatId, "Proses dibatalkan. Kirim /daftar untuk mulai lagi.");
