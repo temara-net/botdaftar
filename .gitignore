@@ -14,3 +14,7 @@ testserver/__pycache__/
 # File konfigurasi lokal berisi token/key asli, bila dibuat terpisah
 config.local.php
 .env
+
+# State sesi bot versi Actions (memuat ID Telegram pemilik) — repo PUBLIK,
+# state hanya boleh di cache privat Actions, tidak pernah di Git
+/state/state.json
