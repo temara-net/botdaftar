@@ -1,0 +1,9 @@
+# Riwayat percakapan pengguna bot (privat, jangan ikut ke Git)
+data/*.json
+
+# Artefak harness uji lokal
+test/mock_*
+
+# File konfigurasi lokal berisi token/key asli, bila dibuat terpisah
+config.local.php
+.env
