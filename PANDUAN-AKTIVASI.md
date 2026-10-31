@@ -5,7 +5,8 @@ tiap 10 menit + bisa dipicu manual). Supaya hidup, isi 2 rahasia ini —
 tanpa keduanya workflow hanya mencetak "SECRETS BELUM DIISI" dan berhenti wajar.
 
 ## 1. Buat bot Telegram di BotFather
-1. Chat ke **@BotFather** → `/newbot` → ikuti langkahnya → simpan **token** bot.
+Nama bot (keputusan pemilik): **daftarwebot**.
+1. Chat ke **@BotFather** → `/newbot` → nama bot: `daftarwebot` → username harus diakhiri `bot` (mis. `daftarwebot_bot`, sesuaikan dengan yang tersedia) → simpan **token** bot. Token TIDAK dikirim lewat chat.
 2. Chat ke **@userinfobot** untuk melihat **ID Telegram kamu** (angka). Catat.
 
 ## 2. Isi Secrets repo
