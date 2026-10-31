@@ -1,0 +1,47 @@
+name: botdaftar-eksekusi
+
+# Eksekutor pendaftaran versi WEBHOOK: workflow ini TIDAK berjalan berkala.
+# Ia dipicu on-demand oleh Worker (webhook Telegram) lewat workflow_dispatch
+# begitu pengguna menyelesaikan alur dan mengirim password. Input hanya
+# job_id — data pendaftaran (termasuk password) diambil dari Cloudflare KV
+# oleh daftar/executor_job.py lalu job-nya dihapus. Password TIDAK pernah
+# menjadi input workflow (input terlihat di UI Actions).
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: "ID job di Cloudflare KV"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botdaftar-eksekusi
+  cancel-in-progress: false
+
+jobs:
+  eksekusi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pasang dependensi
+        run: |
+          pip install -r daftar/requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Jalankan eksekutor job
+        env:
+          JOB_ID: ${{ inputs.job_id }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CF_KV_NS_ID: ${{ secrets.CF_KV_NS_ID }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          EXECUTOR: browser
+        run: python -m daftar.executor_job

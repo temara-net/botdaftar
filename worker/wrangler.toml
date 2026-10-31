@@ -1,0 +1,9 @@
+name = "botdaftar"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Binding KV dibuat saat aktivasi: wrangler kv namespace create BOTKV
+# lalu tempel id-nya di bawah (lihat PANDUAN-WEBHOOK.md).
+# [[kv_namespaces]]
+# binding = "BOTKV"
+# id = "<id-namespace-kv>"
