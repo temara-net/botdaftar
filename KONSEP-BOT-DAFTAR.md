@@ -48,7 +48,7 @@ Bot TIDAK memecahkan CAPTCHA, TIDAK mengakali anti-bot, TIDAK membuat akun massa
 10. **Hasil akhir** dikirim ke pengguna: BERHASIL (situs, username, email, waktu, tangkapan layar halaman sesudah daftar) atau GAGAL (tahap ke berapa + alasan dalam bahasa sederhana + tangkapan layar titik gagalnya).
 
 ## Peran AI (tiga, tidak lebih)
-1. Membuat nama/username acak yang wajar (bukan nama pemilik/pemilik/brand).
+1. Membuat nama/username acak yang wajar (bukan nama pemilik/brand).
 2. Memetakan kolom formulir asing ke data yang tersedia (mis. kolom "Full Name", "Nama Lengkap", "Display name" semuanya dikenali sebagai nama).
 3. Menerjemahkan pesan hasil/error dari situs menjadi penjelasan sederhana berbahasa Indonesia untuk pengguna.
 
