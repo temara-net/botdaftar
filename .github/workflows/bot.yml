@@ -32,6 +32,14 @@ jobs:
           pip install -r daftar/requirements.txt
           playwright install --with-deps chromium
 
+      - name: Ambil state dari cache privat (bukan dari Git)
+        uses: actions/cache@v4
+        with:
+          path: state/state.json
+          key: botdaftar-state-${{ github.run_id }}
+          restore-keys: |
+            botdaftar-state-
+
       - name: Jalankan bot
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
@@ -43,12 +51,5 @@ jobs:
           EXECUTOR: browser
         run: python -m daftar.bot
 
-      - name: Simpan state bila berubah
-        run: |
-          if [ -n "$(git status --porcelain state/)" ]; then
-            git config user.name "botdaftar[bot]"
-            git config user.email "botdaftar@users.noreply.github.com"
-            git add state/
-            git commit -m "state: perbarui sesi bot"
-            git push
-          fi
+      # State TIDAK dikomit ke repo (repo publik). actions/cache di atas
+      # menyimpannya otomatis di akhir job ke cache privat Actions.
